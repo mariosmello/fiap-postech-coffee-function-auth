@@ -1,4 +1,8 @@
 const mysql = require('mysql');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const secretKey = process.env.JWT_SECRET_KEY; // Use uma chave secreta complexa e armazene de forma segura
 
 // Configuração do banco de dados
 const pool = mysql.createPool({
@@ -10,18 +14,33 @@ const pool = mysql.createPool({
 });
 
 exports.handler = (event, context, callback) => {
-    // Previne o término da conexão antes da conclusão da query
     context.callbackWaitsForEmptyEventLoop = false;
+    const { email, password } = JSON.parse(event.body);
 
     pool.getConnection((err, connection) => {
         if (err) throw err;
 
-        // Execute uma query
-        connection.query('SELECT 1 + 1 AS solution', (error, results, fields) => {
+        const query = 'SELECT email, password FROM users WHERE email = ? LIMIT 1';
+        connection.query(query, [email], (error, results) => {
             connection.release();
 
-            if (error) callback(error);
-            else callback(null, {statusCode: 200, body: JSON.stringify({solution: results[0].solution})});
+            if (error) {
+                callback(error);
+            } else if (results.length === 0) {
+                callback(null, { statusCode: 404, body: JSON.stringify({ message: 'Usuário não encontrado.' }) });
+            } else {
+                const user = results[0];
+                bcrypt.compare(password, user.password, (err, result) => {
+                    if (result) {
+                        const token = jwt.sign({ email: user.email }, secretKey, { expiresIn: '1h' });
+                        callback(null, { statusCode: 200, body: JSON.stringify({ token }) });
+                    } else {
+                        callback(null, { statusCode: 401, body: JSON.stringify({ message: 'Senha inválida.' }) });
+                    }
+                });
+            }
+
         });
+
     });
 };
