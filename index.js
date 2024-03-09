@@ -1,5 +1,3 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const mysql = require('mysql');
 
 // Configuração da conexão com o banco de dados MySQL
@@ -10,7 +8,7 @@ const dbConfig = {
     database: process.env.RDS_DATABASE
 };
 
-exports.handler = async (event) => {
+exports.handler = function(event, context) {
     let connection = mysql.createConnection(dbConfig);
 
     return new Promise((resolve, reject) => {
