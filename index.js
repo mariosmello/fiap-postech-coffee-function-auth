@@ -31,7 +31,7 @@ exports.handler = (event, context, callback) => {
             if (error) {
                 callback(error);
             } else if (results.length === 0) {
-                callback(null, { statusCode: 404, data: { message: 'Usuário não encontrado.' } });
+                callback(null, { statusCode: 404, data: { message: 'Cliente não encontrado.' } });
             } else {
                 const user = results[0];
                 bcrypt.compare(password, user.password, (err, result) => {
